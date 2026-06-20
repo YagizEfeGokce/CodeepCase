@@ -21,8 +21,12 @@ kullanır — GLFW viewer gerekmez, ekran/GPU olmadan fizik + DDS köprüsü ça
 Gate'ler DDS üzerinden her zamanki gibi bağlanır ve aynı doğrulama çıktısını
 verir.
 
-> Headless yürüyüş bu makinede doğrulandı: `HEADLESS=1 bash run.sh b` →
-> Gate B PASS (drift 0.01 m, dik). İmaj, aynı ortamı (ekran hariç) içerir.
+> **Konteyner doğrulandı (gerçek docker build + run):** `docker build -t codeep .`
+> (RC=0) ve `docker run --rm codeep` → **Gate B PASS** (drift 0.01 m, dik);
+> `docker run --rm codeep bash run.sh f` → **Gate F+ PASS** (4/4 waypoint,
+> engel 0.40 m clearance). Yani tüm stack (locomotion + navigasyon + engel +
+> waypoint) temiz bir konteynerde tekrar üretilebilir — "benim makinemde
+> çalışıyor" sendromu yok. Host'ta da `HEADLESS=1 bash run.sh b` doğrulandı.
 
 ## GUI (MuJoCo viewer) — opsiyonel
 
