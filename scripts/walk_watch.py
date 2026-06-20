@@ -45,7 +45,7 @@ def main():
     while not stop["v"]:
         time.sleep(0.2)
         p = runner.pose(); v = runner.velocity(); q = runner.quaternion()
-        if p and v and q:
+        if p and v and q and start_pose is not None:
             now = time.time()
             if int(now) - last >= 5:
                 last = int(now)

@@ -60,8 +60,8 @@ def main():
         r = avoider.step()
         if r is not None:
             p = r["pose"]
-            samples.append((time.time() - start_t, p[0], p[1], p[2], r["state"],
-                            math.hypot(TARGET[0] - p[0], TARGET[1] - p[1])))
+            assert isinstance(p, list)
+            samples.append((time.time() - start_t, p[0], p[1], p[2]))
             if r["state"] != last_state:
                 last_state = r["state"]
                 print(f"  [state] {last_state:10s} pose=({p[0]:+.3f},{p[1]:+.3f},{p[2]:+.3f}) "

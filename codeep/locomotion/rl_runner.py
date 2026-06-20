@@ -29,7 +29,7 @@ import numpy as np
 _EXT = (Path(__file__).resolve().parents[2]
         / "external" / "unitree-sim2real" / "RL_policy_runner" / "sim2sim")
 sys.path.insert(0, str(_EXT))
-import run_rl_policy as _rp  # noqa: E402
+import run_rl_policy as _rp  # noqa: E402  # pi-lens-ignore: reportMissingImports
 from run_rl_policy import RLPolicy  # noqa: E402
 
 from unitree_sdk2py.core.channel import (  # noqa: E402

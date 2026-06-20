@@ -18,7 +18,7 @@ from __future__ import annotations
 import threading
 import numpy as np
 
-from unitree_sdk2py.core.channel import (
+from unitree_sdk2py.core.channel import (  # pi-lens-ignore: reportMissingImports
     ChannelFactoryInitialize,
     ChannelPublisher,
     ChannelSubscriber,

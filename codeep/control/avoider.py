@@ -15,6 +15,7 @@ change to the reaction/planning layer.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 from .nav import yaw_from_quat
 
@@ -59,7 +60,7 @@ class ObstacleAvoider:
                 return (ox, oy, r)
         return None
 
-    def step(self):
+    def step(self) -> dict[str, Any] | None:
         runner = self.nav.runner
         pose = runner.pose()
         yaw = self.nav._yaw()
@@ -106,7 +107,7 @@ class ObstacleAvoider:
 
         if self.state == "to_detour":
             r = self.nav.step()
-            if self.nav.reached:
+            if self.nav.reached and self.final_target is not None:
                 self.nav.set_target(*self.final_target)
                 self.nav.reached = False
                 self.state = "to_final"

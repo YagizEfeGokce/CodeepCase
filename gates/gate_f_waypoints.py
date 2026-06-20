@@ -51,13 +51,15 @@ def main():
     while time.time() - start_t < args.duration and not wm.done:
         r = wm.step()
         p = runner.pose()
-        if p is not None and r.get("idx") != last_idx:
-            last_idx = r.get("idx")
-            wp = WAYPOINTS[last_idx] if last_idx < len(WAYPOINTS) else None
-            if wp is not None:
-                d = math.hypot(wp[0] - p[0], wp[1] - p[1])
-                print(f"  -> waypoint {last_idx+1}/{len(WAYPOINTS)} target={wp} "
-                      f"pose=({p[0]:+.2f},{p[1]:+.2f}) dist={d:.2f}")
+        if p is not None:
+            idx = r.get("idx")
+            if idx is not None and idx != last_idx:
+                last_idx = idx
+                wp = WAYPOINTS[last_idx] if last_idx < len(WAYPOINTS) else None
+                if wp is not None:
+                    d = math.hypot(wp[0] - p[0], wp[1] - p[1])
+                    print(f"  -> waypoint {last_idx+1}/{len(WAYPOINTS)} target={wp} "
+                          f"pose=({p[0]:+.2f},{p[1]:+.2f}) dist={d:.2f}")
         time.sleep(0.1)
 
     runner.set_command(0.0, 0.0, 0.0)

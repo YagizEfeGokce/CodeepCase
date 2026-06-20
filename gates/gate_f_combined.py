@@ -62,6 +62,7 @@ def main():
         p = runner.pose()
         if p is not None and r.get("idx") != last_idx:
             last_idx = r.get("idx")
+            assert last_idx is not None
             if last_idx < len(WAYPOINTS):
                 wp = WAYPOINTS[last_idx]
                 d = math.hypot(wp[0] - p[0], wp[1] - p[1])

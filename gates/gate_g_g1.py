@@ -58,6 +58,7 @@ def main():
 
     with open(f"{LEGGED_GYM_ROOT_DIR}/deploy/deploy_mujoco/configs/g1.yaml") as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
+    assert isinstance(cfg, dict), "g1.yaml config yüklenemedi"
     policy_path = cfg["policy_path"].replace("{LEGGED_GYM_ROOT_DIR}", LEGGED_GYM_ROOT_DIR)
     xml_path = cfg["xml_path"].replace("{LEGGED_GYM_ROOT_DIR}", LEGGED_GYM_ROOT_DIR)
     sim_dt = cfg["simulation_dt"]
@@ -79,7 +80,7 @@ def main():
     obs = np.zeros(num_obs, dtype=np.float32)
     counter = 0
 
-    m = mujoco.MjModel.from_xml_path(xml_path)
+    m = mujoco.MjModel.from_xml_path(xml_path)  # pi-lens-ignore: reportAttributeAccessIssue
     d = mujoco.MjData(m)
     m.opt.timestep = sim_dt
     policy = torch.jit.load(policy_path)

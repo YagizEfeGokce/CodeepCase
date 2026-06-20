@@ -39,7 +39,7 @@ def main():
     # config.ROBOT_SCENE is relative to the simulate_python dir
     os.chdir(_SIMDIR)
 
-    mj_model = mujoco.MjModel.from_xml_path(config.ROBOT_SCENE)
+    mj_model = mujoco.MjModel.from_xml_path(config.ROBOT_SCENE)  # pi-lens-ignore: reportAttributeAccessIssue
     mj_data = mujoco.MjData(mj_model)
     mj_model.opt.timestep = config.SIMULATE_DT
     time.sleep(0.2)

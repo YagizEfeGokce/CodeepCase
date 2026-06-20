@@ -6,6 +6,8 @@ controller keeps driving during transitions.
 """
 from __future__ import annotations
 
+from typing import Any
+
 import math
 
 
@@ -32,7 +34,7 @@ class WaypointManager:
     def current_target(self):
         return self.waypoints[self.idx] if self.idx < len(self.waypoints) else None
 
-    def step(self):
+    def step(self) -> dict[str, Any]:
         runner = self.nav.runner
         if self.done:
             runner.set_command(0.0, 0.0, 0.0)

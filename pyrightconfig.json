@@ -1,8 +1,24 @@
 {
   "venvPath": ".",
   "venv": ".venv",
-  "include": ["codeep", "scripts"],
-  "exclude": ["external", ".venv"],
-  "extraPaths": ["."],
-  "reportMissingImports": "warning"
+  "pythonVersion": "3.12",
+  "include": ["codeep", "scripts", "gates"],
+  "exclude": ["external", ".venv", "build", "install"],
+  "extraPaths": [
+    ".",
+    ".venv/lib/python3.12/site-packages",
+    "external/unitree_sdk2_python",
+    "external/unitree-sim2real/RL_policy_runner/sim2sim",
+    "external/unitree_rl_gym",
+    "external/unitree_mujoco/simulate_python"
+  ],
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportIndexIssue": "none",
+  "reportCallIssue": "warning",
+  "reportArgumentType": "warning",
+  "reportOptionalSubscript": "warning",
+  "reportOptionalIterable": "warning",
+  "reportOptionalMemberAccess": "warning"
 }

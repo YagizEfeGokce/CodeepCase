@@ -12,6 +12,7 @@ small so it does not fight the heading loop.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 
 def wrap_angle(a: float) -> float:
@@ -55,7 +56,7 @@ class NavController:
         q = self.runner.quaternion()
         return None if q is None else yaw_from_quat(q)
 
-    def step(self):
+    def step(self) -> dict[str, Any] | None:
         p = self.runner.pose()
         yaw = self._yaw()
         if p is None or yaw is None or self.target is None:
