@@ -116,9 +116,13 @@ def main():
     t, px, py, pz, vx, vy, vz, roll, pitch, yaw = [arr[:, i] for i in range(10)]
 
     drift = math.hypot(px[-1] - start_pose[0], py[-1] - start_pose[1])
+    # velocity criteria ignore the first 2 s of hold (stand-up settling transient)
+    settle = t >= 2.0
+    absvx = np.abs(vx[settle]) if np.any(settle) else np.abs(vx)
+    absvy = np.abs(vy[settle]) if np.any(settle) else np.abs(vy)
     metrics = {
         "z_min": float(pz.min()), "z_max": float(pz.max()),
-        "absvx_max": float(np.max(np.abs(vx))), "absvy_max": float(np.max(np.abs(vy))),
+        "absvx_max": float(np.max(absvx)), "absvy_max": float(np.max(absvy)),
         "drift_m": float(drift),
         "roll_deg_max": float(math.degrees(np.max(np.abs(roll)))),
         "pitch_deg_max": float(math.degrees(np.max(np.abs(pitch)))),
