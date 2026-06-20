@@ -13,6 +13,7 @@ Validation:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import math
 import sys
 import time
@@ -52,6 +53,7 @@ def quat_to_euler(w, x, y, z):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--duration", type=float, default=15.0)
+    ap.add_argument("--headless", action="store_true", help="viewer olmadan (konteyner/CI)")
     args = ap.parse_args()
 
     with open(f"{LEGGED_GYM_ROOT_DIR}/deploy/deploy_mujoco/configs/g1.yaml") as f:
@@ -86,9 +88,10 @@ def main():
 
     samples = []
     start_x = None
-    with mujoco.viewer.launch_passive(m, d) as viewer:
+    ctx = contextlib.nullcontext() if args.headless else mujoco.viewer.launch_passive(m, d)
+    with ctx as viewer:
         start = time.time()
-        while viewer.is_running() and time.time() - start < args.duration:
+        while (args.headless or (viewer is not None and viewer.is_running())) and time.time() - start < args.duration:
             step_start = time.time()
             tau = pd_control(target_dof_pos, d.qpos[7:], kps,
                              np.zeros_like(kds), d.qvel[6:], kds)
@@ -115,7 +118,8 @@ def main():
                 action = policy(torch.from_numpy(obs).unsqueeze(0)).detach().numpy().squeeze()
                 target_dof_pos = action * action_scale + default_angles
 
-            viewer.sync()
+            if viewer is not None:
+                viewer.sync()
             x, y, z = float(d.qpos[0]), float(d.qpos[1]), float(d.qpos[2])
             if start_x is None:
                 start_x = x
