@@ -8,17 +8,17 @@ ROOT="$PWD"
 echo "=== 1) venv (--without-pip; ensurepip Debian'da yok) ==="
 python3 -m venv --without-pip .venv
 if [ ! -f /tmp/get-pip.py ]; then
-  curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+	curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
 fi
 .venv/bin/python /tmp/get-pip.py --quiet
 
 echo "=== 2) dış bağımlılıkları klonla ==="
 mkdir -p external && cd external
-[ -d cyclonedds ]          || git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git
-[ -d unitree_mujoco ]      || git clone --depth 1 https://github.com/unitreerobotics/unitree_mujoco.git
+[ -d cyclonedds ] || git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git
+[ -d unitree_mujoco ] || git clone --depth 1 https://github.com/unitreerobotics/unitree_mujoco.git
 [ -d unitree_sdk2_python ] || git clone --depth 1 https://github.com/unitreerobotics/unitree_sdk2_python.git
-[ -d unitree-sim2real ]    || git clone --depth 1 https://github.com/shivam-sood00/unitree-sim2real.git
-[ -d unitree_rl_gym ]      || git clone --depth 1 https://github.com/unitreerobotics/unitree_rl_gym.git
+[ -d unitree-sim2real ] || git clone --depth 1 https://github.com/shivam-sood00/unitree-sim2real.git
+[ -d unitree_rl_gym ] || git clone --depth 1 https://github.com/unitreerobotics/unitree_rl_gym.git
 cd "$ROOT"
 
 echo "=== 3) Cyclone DDS C kütüphanesini derle (local prefix) ==="
@@ -39,7 +39,7 @@ export CMAKE_PREFIX_PATH="$CYCLONEDDS_HOME:$CMAKE_PREFIX_PATH"
 
 echo "=== 5) Go2 sahnelerini kur + config.py yama ==="
 GO2DIR="external/unitree_mujoco/unitree_robots/go2"
-cp scenes/go2_scene_clean.xml    "$GO2DIR/scene_clean.xml"
+cp scenes/go2_scene_clean.xml "$GO2DIR/scene_clean.xml"
 cp scenes/go2_scene_obstacle.xml "$GO2DIR/scene_obstacle.xml"
 bash scripts/use_scene.sh clean
 

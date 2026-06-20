@@ -111,13 +111,17 @@ bash scripts/use_scene.sh obstacle   # scene_obstacle.xml — Gate E/F+ (kutu en
 - `scene_obstacle.xml` — yolda tek kutu engel (Gate E/F+)
 
 ```bash
-# --- B) Doğrulama betikleri (ayrı terminal, aynı venv) ---
-.venv/bin/python scripts/gate_b_stand.py        # Gate B: dik dur
-.venv/bin/python scripts/gate_c_rl.py --vx 0.3  # Gate C: ileri yürü
-.venv/bin/python scripts/straight_walk.py        # Gate D: hedefe git (5,0)
-.venv/bin/python scripts/gate_e_obstacle.py      # Gate E: engelden kaçın
-.venv/bin/python scripts/gate_f_combined.py     # Gate F+: 4 waypoint + engel
-.venv/bin/python scripts/gate_g_g1.py           # Gate G: G1 humanoid (kendi viewer'ı)
+# --- B) Doğrulama betikleri (gates/, ayrı terminal, aynı venv) ---
+.venv/bin/python gates/gate_b_stand.py        # Gate B: dik dur
+.venv/bin/python gates/gate_c_rl.py --vx 0.3 # Gate C: ileri yürü (RL trot)
+.venv/bin/python gates/straight_walk.py      # Gate D: hedefe git (5,0)
+.venv/bin/python gates/gate_e_obstacle.py    # Gate E: engelden kaçın
+.venv/bin/python gates/gate_f_combined.py   # Gate F+: 4 waypoint + engel (tek run)
+.venv/bin/python gates/gate_g_g1.py          # Gate G: G1 humanoid (kendi viewer'ı)
+
+# İzleme/demo yardımcıları (scripts/):
+.venv/bin/python scripts/stand_watch.py     # Go2 dik durma canlı izle
+.venv/bin/python scripts/walk_watch.py      # Go2 ileri yürüyüşü canlı izle
 ```
 
 G1 (Gate G) kendi MuJoCo viewer'ını açar; Go2 simülatörüne ihtiyaç duymaz.
@@ -166,7 +170,7 @@ Katmanlı mimari (her katman `codeep/` altında ayrı modül):
   önceden eğitilmiş `g1/motion.pt` hareket politikası, kendi MJCF'i ve
   viewer'ı ile standalone çalışır.
 
-Tüm modüller `codeep/` paketinde; doğrulama betikleri `scripts/` altında.
+Tüm modüller `codeep/` paketinde; doğrulama betikleri `gates/` altında.
 
 ## 6. Hedef noktaya yönlendirme mantığı
 
@@ -285,30 +289,35 @@ bir lidar/derinlik sensörü eklenirse, algılama katmanı değişmeden
 ## Ek: Repo yapısı
 
 ```
-CodeepV1/
+CodeepCase/
 ├── README.md                  # bu teknik rapor (TR)
 ├── Codeep_Teknik_Case.pdf
 ├── requirements.txt
 ├── pyrightconfig.json
-├── codeep/
+├── codeep/                    # kütüphane
 │   ├── robot/go2_client.py    # DDS köprüsü (LowCmd/LowState/SportModeState)
 │   ├── locomotion/rl_runner.py # RL trot policy sarmalayıcı
-│   ├── control/
-│   │   ├── kinematics.py      # (open-loop deneme; nihayet kullanılmadı)
-│   │   ├── trot.py             # (open-loop deneme; nihayet kullanılmadı)
-│   │   ├── nav.py              # NavController (Gate D)
-│   │   ├── avoider.py          # ObstacleAvoider (Gate E)
-│   │   └── waypoints.py        # WaypointManager (Gate F)
-├── scripts/
-│   ├── setup.sh
+│   └── control/
+│       ├── kinematics.py      # (open-loop deneme; nihayet kullanılmadı)
+│       ├── trot.py            # (open-loop deneme; nihayet kullanılmadı)
+│       ├── nav.py             # NavController (Gate D)
+│       ├── avoider.py         # ObstacleAvoider (Gate E)
+│       └── waypoints.py       # WaypointManager (Gate F)
+├── gates/                     # doğrulama betikleri (gate A–G)
 │   ├── gate_b_stand.py … gate_g_g1.py
-│   ├── straight_walk.py
+│   └── straight_walk.py        # Gate D: hedefe git
+├── scripts/                   # kurulum + canlı izleme yardımcıları
+│   ├── setup.sh               # tek-komut kurulum (sudo'suz)
+│   ├── use_scene.sh           # clean ↔ obstacle sahne değiştir
 │   └── stand_watch.py / walk_watch.py
-└── external/                  # klonlanan bağımlılıklar (gitignored)
+├── scenes/                    # Go2 MJCF sahneleri (repo'da)
+│   ├── go2_scene_clean.xml
+│   └── go2_scene_obstacle.xml
+└── external/                  # klonlanan bağımlılıklar (.gitignore)
     ├── cyclonedds/  unitree_mujoco/  unitree_sdk2_python/
-    ├── unitree-sim2real/  unitree_rl_gym/
+    └── unitree-sim2real/  unitree_rl_gym/
 ```
 
-`codeep/control/kinematics.py` ve `trot.py` open-loop IK denemesinden
-kalmadır (§9.2); mimarinin anlaşılması için tutulmuştur, nihai yürüme
-`rl_runner.py` ile sağlanır.
+`codeep/control/kinematics.py` ve `trot.py` (ve `gates/gate_c_walk.py`)
+open-loop IK denemesinden kalmadır (§9.2); mimarinin anlaşılması için
+tutulmuştur, nihai yürüme `rl_runner.py` ile sağlanır (Gate C: `gates/gate_c_rl.py`).

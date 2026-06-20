@@ -5,9 +5,12 @@ set -e
 cd "$(dirname "$0")/.."
 CFG="external/unitree_mujoco/simulate_python/config.py"
 case "${1:-clean}" in
-  clean)    SCENE="scene_clean.xml" ;;
-  obstacle) SCENE="scene_obstacle.xml" ;;
-  *) echo "kullanım: $0 clean|obstacle"; exit 1 ;;
+clean) SCENE="scene_clean.xml" ;;
+obstacle) SCENE="scene_obstacle.xml" ;;
+*)
+	echo "kullanım: $0 clean|obstacle"
+	exit 1
+	;;
 esac
 python3 - "$CFG" "$SCENE" <<'PY'
 import sys, re
