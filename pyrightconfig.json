@@ -1,0 +1,8 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["codeep", "scripts"],
+  "exclude": ["external", ".venv"],
+  "extraPaths": ["."],
+  "reportMissingImports": "warning"
+}

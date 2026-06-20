@@ -1,0 +1,22 @@
+# Sanal ortam
+.venv/
+__pycache__/
+*.pyc
+
+# Klonlanan dış bağımlılıklar (README §3 / scripts/setup.sh ile klonlanır)
+external/
+
+# Derleme çıktıları
+build/
+install/
+
+# Pi/araç geçici dosyaları
+.pi/
+.atl/
+
+# Loglar
+*.log
+/tmp/codeep_*.log
+
+# OS
+.DS_Store

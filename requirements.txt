@@ -1,0 +1,10 @@
+# Python bağımlılıkları (izole .venv içinde kurulum)
+# Dış bağımlılıklar (unitree_mujoco, unitree_sdk2_python, cyclonedds,
+# unitree-sim2real, unitree_rl_gym) scripts/setup.sh ile klonlanır.
+mujoco>=3.2
+numpy>=1.24
+pyyaml>=6.0
+pygame>=2.5
+cyclonedds==0.10.2          # CYCLONEDDS_HOME kurulu CycloneDDS C kütüphanesini ister
+torch>=2.3                  # CPU yeterli; RL policy'leri için
+# unitree_sdk2_python   -> external/unitree_sdk2_python 'den editable kurulur
