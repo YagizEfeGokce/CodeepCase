@@ -2,7 +2,7 @@
 to a far target on +x (5, 0) so it walks in a straight line, not drifting.
 
 Run while the unitree_mujoco sim (clean scene) is up:
-  .venv/bin/python scripts/straight_walk.py [--target 5 0] [--duration 25]
+  .venv/bin/python gates/straight_walk.py [--target 5 0] [--duration 25]
 
 Reports straightness metrics: forward progress, max |y| deviation, final distance.
 """

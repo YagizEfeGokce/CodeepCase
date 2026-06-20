@@ -4,7 +4,7 @@ passes the obstacle box at (2.5, 0) on the first leg, so the ObstacleAvoider
 detours, then the robot continues through the remaining waypoints.
 
 Run while the unitree_mujoco sim (scene_obstacle.xml) is up:
-  .venv/bin/python scripts/gate_f_combined.py
+  .venv/bin/python gates/gate_f_combined.py
 
 Validation:
   * reaches ALL 4 waypoints in order, each within 0.40 m

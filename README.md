@@ -3,10 +3,31 @@
 Teknik rapor · Unitree Go2 robotunu MuJoCo simülasyonunda çalıştırma, hedefe
 yönlendirme ve engel algılama
 
-> Bu raper, Codeep STAJ programı teknik case'inin teslim dokümanıdır. Case
+> Bu rapor, Codeep STAJ programı teknik case'inin teslim dokümanıdır. Case
 > brief'i: `Codeep_Teknik_Case.pdf`. Tüm zorunlu çıktılar ve bonus maddeleri
 > (engel algılama, çoklu waypoint, modüler kod, G1 humanoid denemesi)
 > yerine getirilmiştir.
+>
+> Repo: <https://github.com/YagizEfeGokce/CodeepCase>
+
+## Hızlı başlangıç
+
+```bash
+git clone https://github.com/YagizEfeGokce/CodeepCase.git && cd CodeepCase
+bash scripts/setup.sh          # tek komutla kurulum (sudo'suz, ~3 dk)
+bash scripts/check_env.sh       # ortamı doğrula (Go2 + G1)
+
+bash run.sh b                  # Gate B: Go2 dik dur
+bash run.sh c --vx 0.3          # Gate C: ileri yürü
+bash run.sh d                   # Gate D: hedefe git
+bash run.sh e                   # Gate E: engelden kaçın
+bash run.sh f                   # Gate F+: 4 waypoint + engel (tek run)
+bash run.sh g1                  # Gate G: G1 humanoid yürü (bonus)
+```
+
+`run.sh <gate>` simülatörü doğru sahneyle başlatır, gate'i çalıştırır ve
+kapatır — ikinci bir terminal gerekmez. Daha ince kontrol için §4'teki
+tek-tek komutlar kullanılabilir.
 
 ---
 
@@ -47,8 +68,17 @@ sim-to-real geçişi doğrudandır. Ayrıntılı gerekçe §9'da.
 Tüm bağımlılıklar `external/` altına klonlanır; ana repo sade kalır.
 
 ```bash
-git clone <repo-link> CodeepV1 && cd CodeepV1
+git clone https://github.com/YagizEfeGokce/CodeepCase.git CodeepCase && cd CodeepCase
 
+# A) En kolay yol: tek komutluk kurulum (venv + 5 dış bağımlılık + CycloneDDS derle + pip kur)
+bash scripts/setup.sh
+# B) Doğrula:
+bash scripts/check_env.sh
+```
+
+`scripts/setup.sh` tam olarak şunları yapar (elle kurulum istenirse):
+
+```bash
 # 1) Sanal ortam (ensurepip olmayan Debian/Ubuntu için --without-pip yolu)
 python3 -m venv --without-pip .venv
 curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py

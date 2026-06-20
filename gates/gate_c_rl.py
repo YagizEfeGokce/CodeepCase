@@ -2,7 +2,7 @@
 and validate forward motion + upright stability.
 
 Run while the unitree_mujoco sim is up:
-  .venv/bin/python scripts/gate_c_rl.py [--vx 0.3] [--duration 15]
+  .venv/bin/python gates/gate_c_rl.py [--vx 0.3] [--duration 15]
 
 Validation:
   * forward displacement > 0.5 m

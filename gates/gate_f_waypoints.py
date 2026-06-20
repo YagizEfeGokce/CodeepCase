@@ -1,7 +1,7 @@
 """Gate F — multi-waypoint sequential navigation: visit 4 waypoints (a square
 loop) in order on the clean scene.
 
-  .venv/bin/python scripts/gate_f_waypoints.py
+  .venv/bin/python gates/gate_f_waypoints.py
 
 Validation:
   * reaches ALL 4 waypoints in order, each within 0.40 m

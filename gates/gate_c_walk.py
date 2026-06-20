@@ -3,7 +3,7 @@
 Flow: stand-up ramp -> hold stance -> ramp stride 0->vx -> walk for `duration`
 -> measure forward displacement + upright stability. Run while the sim is up.
 
-  .venv/bin/python scripts/gate_c_walk.py [--vx 0.2] [--duration 15]
+  .venv/bin/python gates/gate_c_walk.py [--vx 0.2] [--duration 15]
 
 Validation (robot walks forward without falling):
   * forward displacement > 0.5 m

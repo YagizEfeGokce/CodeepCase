@@ -2,7 +2,7 @@
 (2.5,0). The ObstacleAvoider detects it, stops, detours around, and resumes.
 
 Run while the unitree_mujoco sim (scene_obstacle.xml) is up:
-  .venv/bin/python scripts/gate_e_obstacle.py
+  .venv/bin/python gates/gate_e_obstacle.py
 
 Validation:
   * reaches final target (5,0) within 0.35 m

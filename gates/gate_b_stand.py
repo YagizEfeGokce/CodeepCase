@@ -2,7 +2,7 @@
 controller + monitor that makes Go2 stand still and validates it for N seconds.
 
 Run AFTER the sim is running:
-    .venv/bin/python scripts/gate_b_stand.py [--duration 30] [--ramp 1.2]
+    .venv/bin/python gates/gate_b_stand.py [--duration 30] [--ramp 1.2]
 
 Validation criteria (robot "stands still without a problem"):
   * base height z stays in [0.25, 0.50] m during hold

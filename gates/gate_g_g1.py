@@ -4,7 +4,7 @@ self-contained MuJoCo run (own viewer + g1_description MJCF, torques applied
 directly) -- an extra experiment on the G1 as the PDF's bonus item, parallel to
 the Go2 DDS-bridge stack.
 
-  .venv/bin/python scripts/gate_g_g1.py [--duration 15]
+  .venv/bin/python gates/gate_g_g1.py [--duration 15]
 
 Validation:
   * forward displacement > 0.5 m (G1 walks forward)
