@@ -1,0 +1,18 @@
+# CodeepCase — container (headless reproducibility check)
+# Build:   docker build -t codeep .
+# Run:     docker run --rm codeep                 # default: Gate B headless
+#          docker run --rm codeep bash run.sh c --vx 0.3
+#          docker run --rm codeep bash run.sh f    # 4 waypoint + obstacle (headless)
+#          docker run --rm codeep bash scripts/check_env.sh
+#
+# (GUI viewer needs X11 + GL — see docs/docker.md)
+services:
+  codeep:
+    image: codeep
+    build: .
+    environment:
+      - HEADLESS=1
+      - SDL_VIDEODRIVER=dummy
+    command: bash run.sh b --duration 10
+    # For a longer/headless gate, override `command`, e.g.:
+    # command: bash run.sh f

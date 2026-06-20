@@ -1,0 +1,12 @@
+# Keep the build context lean; setup.sh re-creates these inside the image.
+external/
+.venv/
+.git/
+*.log
+__pycache__/
+*.pyc
+.pi/
+.atl/
+.DS_Store
+# scratch /tmp artefacts
+codeep_*.log

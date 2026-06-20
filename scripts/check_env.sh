@@ -2,9 +2,17 @@
 # check_env.sh — kurulumu ve tüm bağımlılıkları doğrular (Go2 + G1).
 set -e
 cd "$(dirname "$0")/.."
-ROOT="$PWD"; PY="$ROOT/.venv/bin/python"
-ok=0; fail=0
-chk() { if [ "$2" = "yes" ]; then echo "  [OK]   $1"; ok=$((ok+1)); else echo "  [FAIL] $1"; fail=$((fail+1)); fi; }
+ROOT="$PWD"
+PY="$ROOT/.venv/bin/python"
+ok=0
+fail=0
+chk() { if [ "$2" = "yes" ]; then
+	echo "  [OK]   $1"
+	ok=$((ok + 1))
+else
+	echo "  [FAIL] $1"
+	fail=$((fail + 1))
+fi; }
 
 echo "=== Python venv & importlar ==="
 [ -x "$PY" ] && chk ".venv/bin/python" yes || chk ".venv/bin/python" no
@@ -14,7 +22,7 @@ PY
 
 echo "=== Dış bağımlılıklar (external/, setup.sh ile klonlanır) ==="
 for d in cyclonedds unitree_mujoco unitree_sdk2_python unitree-sim2real unitree_rl_gym; do
-  [ -d "$ROOT/external/$d" ] && chk "external/$d" yes || chk "external/$d" no
+	[ -d "$ROOT/external/$d" ] && chk "external/$d" yes || chk "external/$d" no
 done
 [ -d "$ROOT/external/cyclonedds/install/lib" ] && chk "cyclonedds C kütüphanesi derlenmiş" yes || chk "cyclonedds C kütüphanesi derlenmiş" no
 
@@ -29,4 +37,7 @@ echo "=== G1 (bonus) ==="
 
 echo
 echo "Sonuç: $ok OK, $fail FAIL"
-[ "$fail" -eq 0 ] && echo "✓ Ortam hazır. 'bash run.sh b' ile başlayabilirsiniz." || { echo "✗ Eksik var — 'bash scripts/setup.sh' çalıştırın."; exit 1; }
+[ "$fail" -eq 0 ] && echo "✓ Ortam hazır. 'bash run.sh b' ile başlayabilirsiniz." || {
+	echo "✗ Eksik var — 'bash scripts/setup.sh' çalıştırın."
+	exit 1
+}

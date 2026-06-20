@@ -29,6 +29,19 @@ bash run.sh g1                  # Gate G: G1 humanoid yürü (bonus)
 kapatır — ikinci bir terminal gerekmez. Daha ince kontrol için §4'teki
 tek-tek komutlar kullanılabilir.
 
+### Docker ("benim makinemde çalışıyor" sendromu için)
+
+Tüm ortamı içine gömülü bir imaj — her cihazda aynı şekilde çalışır (X/GPU
+ gerekmez):
+
+```bash
+docker build -t codeep .
+docker run --rm codeep                 # Gate B headless (smoke test)
+docker run --rm codeep bash run.sh f   # 4 waypoint + engel (headless)
+```
+
+Ayrıntı (GUI viewer dahil): `docs/docker.md`.
+
 ---
 
 ## 1. Kullanılan simülasyon ortamı
