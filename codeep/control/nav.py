@@ -28,7 +28,8 @@ class NavController:
     def __init__(self, runner,
                  kp_lin: float = 0.6, kp_yaw: float = 1.0, kp_lat: float = 0.5,
                  kp_lat_yaw: float = 0.6, yaw_bias: float = 0.0,
-                 min_align: float = 0.35,
+                 ki_lat: float = 0.0, int_limit: float = 0.6,
+                 min_align: float = 0.35, use_vy: bool = False,
                  max_vx: float = 0.30, max_vy: float = 0.0, max_wz: float = 0.8,
                  goal_tol: float = 0.25, slow_yaw_err: float = 0.6,
                  goal_vx_scale: float = 1.0):
@@ -38,7 +39,11 @@ class NavController:
         self.kp_lat = kp_lat
         self.kp_lat_yaw = kp_lat_yaw  # feedback: cancel lateral crab via extra yaw
         self.yaw_bias = yaw_bias      # feedforward heading offset into the drift (rad)
+        self.ki_lat = ki_lat          # integral gain on lateral error -> cancels steady crab
+        self.int_limit = int_limit    # anti-windup clamp on the lateral integrator
+        self.lat_int = 0.0
         self.min_align = min_align    # keep min forward speed so the policy keeps walking while turning
+        self.use_vy = use_vy          # if True, command real vy (vy-tracking policy); else vy=0 (all_gait)
         self.max_vx = max_vx
         self.max_vy = max_vy
         self.max_wz = max_wz
@@ -51,6 +56,7 @@ class NavController:
     def set_target(self, x: float, y: float):
         self.target = (x, y)
         self.reached = False
+        self.lat_int = 0.0
 
     def _yaw(self):
         q = self.runner.quaternion()
@@ -72,14 +78,19 @@ class NavController:
         # (the all_gait policy ignores vy, so we steer into the drift with yaw)
         cy, sy = math.cos(yaw), math.sin(yaw)
         lat_body = -sy * dx + cy * dy
-        wz = max(-self.max_wz, min(self.max_wz, self.kp_yaw * yaw_err + self.kp_lat_yaw * lat_body))
+        # integral on lateral error to cancel steady-state crab (anti-windup)
+        self.lat_int = max(-self.int_limit, min(self.int_limit, self.lat_int + lat_body * 0.1))
+        wz = max(-self.max_wz, min(self.max_wz, self.kp_yaw * yaw_err + self.kp_lat_yaw * lat_body + self.ki_lat * self.lat_int))
 
         # forward speed, scaled down when not yet aligned with the target
         align = max(self.min_align, 1.0 - abs(yaw_err) / self.slow_yaw_err)
         vx = max(0.0, min(self.max_vx, self.kp_lin * dist)) * align * self.goal_vx_scale
 
-        # lateral velocity command is ineffective on this policy -> keep 0
-        vy = 0.0
+        # lateral velocity command: real vy for vy-tracking policies; 0 for all_gait
+        if self.use_vy:
+            vy = max(-self.max_vy, min(self.max_vy, self.kp_lat * lat_body))
+        else:
+            vy = 0.0
 
         if dist <= self.goal_tol:
             vx = vy = wz = 0.0

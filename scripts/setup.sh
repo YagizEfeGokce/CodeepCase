@@ -36,6 +36,7 @@ export CMAKE_PREFIX_PATH="$CYCLONEDDS_HOME:$CMAKE_PREFIX_PATH"
 .venv/bin/python -m pip install cyclonedds==0.10.2
 .venv/bin/python -m pip install -e external/unitree_sdk2_python
 .venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+.venv/bin/python -m pip install "rsl-rl-lib==2.2.4"  # for experiments/ vy runner (walk.pt)
 
 echo "=== 5) Go2 sahnelerini kur + config.py yama ==="
 GO2DIR="external/unitree_mujoco/unitree_robots/go2"

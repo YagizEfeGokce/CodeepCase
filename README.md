@@ -303,7 +303,13 @@ bir lidar/derinlik sensörü eklenirse, algılama katmanı değişmeden
   yeni bir DDS konusu yayımlamak; `ObstacleAvoider`'ın tespit kaynağı
   değiştirilir, reaksiyon/planning katmanı aynı kalır.
 - **`vy` destekleyen policy:** yanal komutu izleyen bir Go2 policy'si ile
-  düz-çizgi yürüyüş `yaw_bias` önyargısına ihtiyaç duymadan sağlanır.
+  düz-çizgi yürüyüş `yaw_bias` önyargısına ihtiyaç duymadan sağlanır. Bu
+  çalışmada denendi (`experiments/`): `walk.pt` (Genesis-eğitim)
+  unitree_mujoco'ya transfer olmamış (durur, ilerlemez); `amble_with_yaw`
+  vy'yi izler ama kapalı-çevrim nav ile dengesizleşti. Mevcut çözüm:
+  `all_gait` trot + `yaw_bias` feedforward ≈0.18 m sürüklenme (5 m'de ~%3-4).
+  Gerçek düz yürüyüş için en iyi aday: `unitree_rl_mjlab` Go2 velocity +
+  C++ `go2_ctrl` (köprü için tasarlı, vy destekli) — ağır kurulum.
 - **G1'i DDS köprüsüne entegre etmek:** G1'i kendi standalone pipeline'ından
   `unitree_mujoco` DDS köprüsüne taşımak (aynı navigasyon stack'ini
   paylaşır).
