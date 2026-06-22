@@ -36,16 +36,29 @@ export CMAKE_PREFIX_PATH="$CYCLONEDDS_HOME:$CMAKE_PREFIX_PATH"
 .venv/bin/python -m pip install cyclonedds==0.10.2
 .venv/bin/python -m pip install -e external/unitree_sdk2_python
 .venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-.venv/bin/python -m pip install "rsl-rl-lib==2.2.4"  # for experiments/ vy runner (walk.pt)
+.venv/bin/python -m pip install onnxruntime         # ONNX vy policy (RLRunnerOnnx; Gate D/E --onnx)
+.venv/bin/python -m pip install "rsl-rl-lib==2.2.4" # for experiments/ vy runner (walk.pt)
 
 echo "=== 5) Go2 sahnelerini kur + config.py yama ==="
 GO2DIR="external/unitree_mujoco/unitree_robots/go2"
 cp scenes/go2_scene_clean.xml "$GO2DIR/scene_clean.xml"
 cp scenes/go2_scene_obstacle.xml "$GO2DIR/scene_obstacle.xml"
+cp scenes/go2_rangefinder.xml "$GO2DIR/go2_rangefinder.xml"         # rangefinder sensörlü robot (Gate E --rf)
+cp scenes/go2_scene_obstacle_rf.xml "$GO2DIR/scene_obstacle_rf.xml" # engel + rangefinder sahnesi (Gate E --rf)
 bash scripts/use_scene.sh clean
 
-echo "=== 6) Gate A doğrulama ==="
-.venv/bin/python -c "import mujoco, cyclonedds, unitree_sdk2py, torch; print('Gate A PASS')"
+echo "=== 6) diasAiMaster Go2 velocity ONNX policy'sini indir (RLRunnerOnnx için) ==="
+HF=https://huggingface.co/diasAiMaster/unitree-go2-velocity-flat/resolve/main
+MDDIR="external/diasAiMaster_go2_velocity_flat"
+mkdir -p "$MDDIR/params"
+[ -f "$MDDIR/policy.onnx" ] || curl -sL "$HF/policy.onnx" -o "$MDDIR/policy.onnx"
+[ -f "$MDDIR/policy.onnx.data" ] || curl -sL "$HF/policy.onnx.data" -o "$MDDIR/policy.onnx.data"
+for f in deploy env agent; do
+	[ -f "$MDDIR/params/$f.yaml" ] || curl -sL "$HF/params/$f.yaml" -o "$MDDIR/params/$f.yaml"
+done
+
+echo "=== 7) Gate A doğrulama ==="
+.venv/bin/python -c "import mujoco, cyclonedds, unitree_sdk2py, torch, onnxruntime; print('Gate A PASS')"
 
 echo "Kurulum tamam. Simülatörü başlat:"
 echo "  cd external/unitree_mujoco/simulate_python && DISPLAY=:1 ../../../../.venv/bin/python unitree_mujoco.py"

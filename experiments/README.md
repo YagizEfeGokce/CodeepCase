@@ -24,6 +24,22 @@ yükler/çalıştırır); ancak walk.pt politikası unitree_mujoco fizik köprü
 transfer olmamaktadır (Genesis'te eğitilmiş). Farklı bir unitree_mujoco-
 uyumlu vy politikası bulunursa bu runner ile kullanılabilir.
 
+## Sonuç: ONNX vy policy KABUL EDİLDİ (repo ana hattına taşındı)
+
+`experiments/straight_walk_onnx.py` probe'u, `diasAiMaster/unitree-go2-velocity-flat`
+ONNX policy'sinin unitree_mujoco'ya **Python onnxruntime yoluyla** (C++
+`go2_ctrl` kurulumu GEREKMEKSİZİN) transfer olduğunu doğruladı. Kabul edildi
+ve ana hatta alındı:
+
+- `codeep/locomotion/rl_runner_onnx.py` — `RLRunnerOnnx` (`RLRunner` ile aynı
+  `set_command(vx,vy,wz)` API'si).
+- `gates/straight_walk.py --onnx` — kapalı-çevrim vy ile düz yürüyüş, `yaw_bias`
+  yok, 5 m'de ~0.03 m yanal sapma (all_gait+yaw_bias ~0.18 m).
+- `gates/gate_e_obstacle.py --onnx --rf` — sensör-tabanlı engel tespiti + ONNX.
+
+Aşağıdaki "daha ileri için" notu artık geçmişe dönüktür — C++ ağır kurulum
+gerekmedi, Python ONNX yeterli oldu.
+
 ## Daha ileri için (README §10)
 
 unitree_mujoco DDS köprüsü için tasarlanmış, `vy` destekli gerçek bir düz

@@ -4,7 +4,8 @@
 #   bash run.sh b                 # Gate B: dik dur
 #   bash run.sh c --vx 0.3         # Gate C: ileri yürü (ek argüman gate'e iletilir)
 #   bash run.sh d                  # Gate D: hedefe git (straight_walk)
-#   bash run.sh e                  # Gate E: engelden kaçın
+#   bash run.sh e                  # Gate E: engelden kaçın (harita-tabanlı, all_gait)
+#   bash run.sh e --onnx --rf        # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy
 #   bash run.sh f                  # Gate F+: 4 waypoint + engel (tek run)
 #   bash run.sh f-waypoints        # Gate F (sadece waypoint, engelsiz)
 #   bash run.sh g1                 # Gate G: G1 humanoid (kendi viewer'ı; sim gerekmez)
@@ -26,7 +27,7 @@ need_venv() {
 		exit 1
 	}
 }
-start_sim() { # $1 = clean|obstacle
+start_sim() { # $1 = clean|obstacle|rf
 	[ -d "$SIMDIR" ] || {
 		echo "[run] external/unitree_mujoco yok — 'bash scripts/setup.sh'."
 		exit 1
@@ -34,7 +35,17 @@ start_sim() { # $1 = clean|obstacle
 	[ -f "$PIDF" ] && kill "$(cat "$PIDF")" 2>/dev/null
 	sleep 1
 	bash scripts/use_scene.sh "$1"
-	if [ "${HEADLESS:-0}" = "1" ] || [ -z "${DISPLAY:-}" ]; then
+	# rf sahnesi rangefinder yayımlamalı → sim_headless.py (viewer+rf veya headless+rf).
+	# clean/obstacle sahnesi upstream unitree_mujoco.py viewer'ını kullanır (rf yok).
+	if [ "$1" = "rf" ]; then
+		if [ "${HEADLESS:-0}" = "1" ] || [ -z "${DISPLAY:-}" ]; then
+			(SDL_VIDEODRIVER=dummy "$PY" scripts/sim_headless.py --duration 180) >"$LOG" 2>&1 &
+			echo "[run] headless sim başlatılıyor (sahne=$1, pid=$!)... 6 sn bekleniyor"
+		else
+			("$PY" scripts/sim_headless.py --viewer --duration 180) >"$LOG" 2>&1 &
+			echo "[run] sim başlatılıyor (sahne=$1, viewer+rangefinder, pid=$!)... 6 sn bekleniyor"
+		fi
+	elif [ "${HEADLESS:-0}" = "1" ] || [ -z "${DISPLAY:-}" ]; then
 		(SDL_VIDEODRIVER=dummy "$PY" scripts/sim_headless.py --duration 180) >"$LOG" 2>&1 &
 		echo "[run] headless sim başlatılıyor (sahne=$1, pid=$!)... 6 sn bekleniyor"
 	else
@@ -73,7 +84,7 @@ d | straight)
 	"$PY" gates/straight_walk.py "$@"
 	;;
 e)
-	start_sim obstacle
+	case " $* " in *" --rf "*) start_sim rf ;; *) start_sim obstacle ;; esac
 	"$PY" gates/gate_e_obstacle.py "$@"
 	;;
 f)
@@ -102,7 +113,7 @@ sim)
 	fi
 	;;
 *)
-	echo "Kullanım: bash run.sh b|c|d|e|f|f-waypoints|g1|watch-stand|watch-walk|sim [clean|obstacle] [-- gate-args]"
+	echo "Kullanım: bash run.sh b|c|d|e|f|f-waypoints|g1|watch-stand|watch-walk|sim [clean|obstacle|rf] [-- gate-args]"
 	exit 1
 	;;
 esac

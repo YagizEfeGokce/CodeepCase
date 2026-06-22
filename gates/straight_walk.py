@@ -17,6 +17,7 @@ import numpy as np
 
 sys.path.insert(0, ".")
 from codeep.locomotion.rl_runner import RLRunner
+from codeep.locomotion.rl_runner_onnx import RLRunnerOnnx
 from codeep.control.nav import NavController
 
 
@@ -32,9 +33,17 @@ def main():
     ap.add_argument("--yaw-bias", type=float, default=0.16)
     ap.add_argument("--ki-lat", type=float, default=0.0)
     ap.add_argument("--max-vy", type=float, default=0.0)
+    ap.add_argument("--onnx", action="store_true",
+                    help="use the diasAiMaster ONNX vy-tracking policy (enables vy, drops yaw_bias)")
+    ap.add_argument("--policy", type=str, default=None, help="ONNX model path (with --onnx)")
     args = ap.parse_args()
 
-    runner = RLRunner(stand_time=args.stand)
+    # vy-tracking policy: real lateral correction, no yaw_bias feedforward hack.
+    use_vy = args.onnx
+    yaw_bias = 0.0 if args.onnx else args.yaw_bias
+    max_vy = 0.3 if args.onnx else args.max_vy
+    runner = (RLRunnerOnnx(policy_path=args.policy, stand_time=args.stand) if args.onnx
+              else RLRunner(stand_time=args.stand))
     runner.start()
 
     t0 = time.time()
@@ -51,10 +60,13 @@ def main():
         print("[FAIL] lost telemetry"); runner.stop(); sys.exit(2)
 
     nav = NavController(runner, max_vx=args.max_vx, goal_tol=0.25,
-                        kp_yaw=args.kp_yaw, kp_lat=args.kp_lat, max_vy=args.max_vy,
-                        kp_lat_yaw=args.kp_lat_yaw, yaw_bias=args.yaw_bias, ki_lat=args.ki_lat)
+                        kp_yaw=args.kp_yaw, kp_lat=args.kp_lat, max_vy=max_vy,
+                        kp_lat_yaw=args.kp_lat_yaw, yaw_bias=yaw_bias,
+                        ki_lat=args.ki_lat, use_vy=use_vy)
     nav.set_target(args.target[0], args.target[1])
-    print(f"[walk] steering to target=({args.target[0]:.2f},{args.target[1]:.2f}) for {args.duration}s ...")
+    policy_name = "ONNX vy-tracking" if args.onnx else "all_gait trot"
+    print(f"[walk] {policy_name}: target=({args.target[0]:.2f},{args.target[1]:.2f}) "
+          f"max_vx={args.max_vx} max_vy={max_vy} yaw_bias={yaw_bias} use_vy={use_vy} for {args.duration}s ...")
 
     samples = []
     start_t = time.time()

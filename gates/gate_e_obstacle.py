@@ -20,8 +20,10 @@ import numpy as np
 
 sys.path.insert(0, ".")
 from codeep.locomotion.rl_runner import RLRunner
+from codeep.locomotion.rl_runner_onnx import RLRunnerOnnx
 from codeep.control.nav import NavController
 from codeep.control.avoider import ObstacleAvoider
+from codeep.control.rangefinder_avoider import RangefinderAvoider
 
 TARGET = (5.0, 0.0)
 OBSTACLE = (2.5, 0.0, 0.25)  # x, y, radius
@@ -33,9 +35,18 @@ def main():
     ap.add_argument("--stand", type=float, default=3.0)
     ap.add_argument("--max-vx", type=float, default=0.30)
     ap.add_argument("--yaw-bias", type=float, default=0.16)
+    ap.add_argument("--max-vy", type=float, default=0.0)
+    ap.add_argument("--onnx", action="store_true",
+                    help="use the diasAiMaster ONNX vy-tracking policy (vy on, yaw_bias=0)")
+    ap.add_argument("--rf", action="store_true",
+                    help="sensor-based: RangefinderAvoider detects the obstacle (no known map)")
     args = ap.parse_args()
 
-    runner = RLRunner(stand_time=args.stand)
+    use_vy = args.onnx
+    yaw_bias = 0.0 if args.onnx else args.yaw_bias
+    max_vy = 0.3 if args.onnx else args.max_vy
+    runner = (RLRunnerOnnx(stand_time=args.stand) if args.onnx
+              else RLRunner(stand_time=args.stand))
     runner.start()
     t0 = time.time()
     while runner.pose() is None and time.time() - t0 < 8.0:
@@ -47,29 +58,43 @@ def main():
     time.sleep(args.stand)
 
     nav = NavController(runner, max_vx=args.max_vx, goal_tol=0.25, kp_yaw=1.3,
-                        kp_lat_yaw=0.6, yaw_bias=args.yaw_bias)
-    avoider = ObstacleAvoider(nav, obstacles=[OBSTACLE], reaction_dist=1.0,
-                              clearance=0.20, margin=0.45, stop_time=0.0, dt=0.1)
+                        kp_lat_yaw=0.6, yaw_bias=yaw_bias, max_vy=max_vy, use_vy=use_vy)
+    if args.rf:
+        avoider = RangefinderAvoider(nav, reaction_dist=1.0, detour_dist=0.8,
+                                     goal_tol=0.25, clear_dist=1.5)
+        mode = "sensor(rangefinder)"
+    else:
+        avoider = ObstacleAvoider(nav, obstacles=[OBSTACLE], reaction_dist=1.0,
+                                  clearance=0.20, margin=0.45, stop_time=0.0, dt=0.1)
+        mode = "known-map"
     avoider.set_target(*TARGET)
-    print(f"[gate E] target={TARGET} obstacle={OBSTACLE} -- navigating ...")
+    policy = "ONNX vy" if args.onnx else "all_gait"
+    print(f"[gate E] {policy} / {mode}: target={TARGET} obstacle={OBSTACLE} -- navigating ...")
 
     samples = []
+    min_obs_dist = float("inf")
     start_t = time.time()
     last_state = None
+    last_print = 0.0
     while time.time() - start_t < args.duration and not avoider.reached:
         r = avoider.step()
         if r is not None:
             p = r["pose"]
             assert isinstance(p, list)
+            min_obs_dist = min(min_obs_dist, math.hypot(OBSTACLE[0]-p[0], OBSTACLE[1]-p[1]))
             samples.append((time.time() - start_t, p[0], p[1], p[2]))
+            now = time.time() - start_t
             if r["state"] != last_state:
                 last_state = r["state"]
+                rf = r.get("rf")
+                rfs = (f" fwd={rf['forward']:.2f} L={rf['left']:.2f} R={rf['right']:.2f}"
+                       if rf else "")
                 print(f"  [state] {last_state:10s} pose=({p[0]:+.3f},{p[1]:+.3f},{p[2]:+.3f}) "
-                      f"dist_to_target={math.hypot(TARGET[0]-p[0],TARGET[1]-p[1]):.2f}")
-            if int(time.time() - start_t) % 5 == 0 and len(samples) > 1 and abs(samples[-1][0] - int(samples[-1][0])) < 0.2:
-                print(f"  t={samples[-1][0]:4.1f}s state={r['state']:10s} "
-                      f"x={p[0]:+.3f} y={p[1]:+.3f} dist={samples[-1][5]:.2f} "
-                      f"min_obs={avoider.min_obs_dist:.2f}")
+                      f"dist_to_target={math.hypot(TARGET[0]-p[0],TARGET[1]-p[1]):.2f}{rfs}")
+            if now - last_print >= 2.0:
+                last_print = now
+                print(f"  t={now:4.1f}s state={r['state']:10s} "
+                      f"x={p[0]:+.3f} y={p[1]:+.3f} min_obs={min_obs_dist:.2f}")
         time.sleep(0.1)
 
     runner.set_command(0.0, 0.0, 0.0)
@@ -85,7 +110,7 @@ def main():
 
     metrics = {
         "final_dist_to_target_m": float(final_dist),
-        "min_obs_dist_m": float(avoider.min_obs_dist),
+        "min_obs_dist_m": float(min_obs_dist),
         "detected": bool(avoider.detected),
         "detour": avoider.detour,
         "reached": bool(avoider.reached),
