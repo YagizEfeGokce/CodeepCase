@@ -18,18 +18,20 @@ bash scripts/setup.sh          # tek komutla kurulum (sudo'suz, ~3 dk)
 bash scripts/check_env.sh       # ortamı doğrula (Go2 + G1)
 
 bash run.sh b                  # Gate B: Go2 dik dur
-bash run.sh c --vx 0.3          # Gate C: ileri yürü
-bash run.sh d                   # Gate D: hedefe git (5,0)  — all_gait+yaw_bias
-bash run.sh d --onnx            # Gate D: düz yürüyüş — ONNX vy policy (yaw_bias yok, ~0.03 m sapma)
+bash run.sh c --vx 0.3          # Gate C: ileri yürü (all_gait trot)
+bash run.sh d --onnx            # Gate D: düz yürüyüş — ONNX vy policy (çekirdek; yaw_bias yok, ~0.03 m sapma)
+bash run.sh d                   # Gate D: (yedek) all_gait+yaw_bias ~0.18 m sapma
+bash run.sh e --onnx --rf        # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy (bonus)
 bash run.sh e                   # Gate E: engelden kaçın (harita-tabanlı, all_gait)
-bash run.sh e --onnx --rf        # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy
 bash run.sh f                   # Gate F+: 4 waypoint + engel (tek run)
 bash run.sh g1                  # Gate G: G1 humanoid yürü (bonus)
 ```
 
-`run.sh <gate>` simülatörü doğru sahneyle başlatır, gate'i çalıştırır ve
-kapatır — ikinci bir terminal gerekmez. Daha ince kontrol için §4'teki
-tek-tek komutlar kullanılabilir.
+**Düz-çizgi yürüyüş Go2'muzün çekirdek yeteneğidir** ve ONNX vy-tracking
+policy'si (`run.sh d --onnx`) ile sağlanır: kapalı-çevrim `vy` yanal düzeltme,
+`yaw_bias` önyargısı yok, 5 m'de ~0.03 m sapma. `run.sh <gate>` simülatörü doğru
+sahneyle başlatır, gate'i çalıştırır ve kapatır — ikinci bir terminal gerekmez.
+Daha ince kontrol için §4'teki tek-tek komutlar kullanılabilir.
 
 ### Docker ("benim makinemde çalışıyor" sendromu için)
 
@@ -179,12 +181,12 @@ bash scripts/use_scene.sh rf         # scene_obstacle_rf.xml — Gate E --rf (en
 # --- B) Doğrulama betikleri (gates/, ayrı terminal, aynı venv) ---
 .venv/bin/python gates/gate_b_stand.py        # Gate B: dik dur
 .venv/bin/python gates/gate_c_rl.py --vx 0.3 # Gate C: ileri yürü (RL trot)
-.venv/bin/python gates/straight_walk.py      # Gate D: hedefe git (5,0)
-.venv/bin/python gates/gate_e_obstacle.py    # Gate E: engelden kaçın
-.venv/bin/python gates/gate_e_obstacle.py --onnx --rf   # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy
+.venv/bin/python gates/straight_walk.py --onnx   # Gate D: düz yürüyüş (çekirdek) — ONNX vy policy, yaw_bias yok
+.venv/bin/python gates/straight_walk.py      # Gate D: (yedek) hedefe git (5,0) — all_gait+yaw_bias
+.venv/bin/python gates/gate_e_obstacle.py --onnx --rf   # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy (bonus)
+.venv/bin/python gates/gate_e_obstacle.py    # Gate E: engelden kaçın (harita-tabanlı)
 .venv/bin/python gates/gate_f_combined.py   # Gate F+: 4 waypoint + engel (tek run)
 .venv/bin/python gates/gate_g_g1.py          # Gate G: G1 humanoid (kendi viewer'ı)
-.venv/bin/python gates/straight_walk.py --onnx   # Gate D: düz yürüyüş — ONNX vy policy (yaw_bias yok)
 
 # İzleme/demo yardımcıları (scripts/):
 .venv/bin/python scripts/stand_watch.py     # Go2 dik durma canlı izle
@@ -204,8 +206,8 @@ Katmanlı mimari (her katman `codeep/` altında ayrı modül):
 │  codeep/control/rangefinder_avoider.py — RangefinderAvoider (Gate E --rf, sensör) │
 │  codeep/control/nav.py                 — NavController (Gate D)      │
 ├─────────────────────────────────────────────────────────────┤
-│  codeep/locomotion/rl_runner.py      — RLRunner (all_gait trot, varsayılan) │
-│  codeep/locomotion/rl_runner_onnx.py — RLRunnerOnnx (ONNX vy policy, --onnx) │
+│  codeep/locomotion/rl_runner_onnx.py — RLRunnerOnnx (ONNX vy policy — ÇEKİRDEK düz yürüyüş) │
+│  codeep/locomotion/rl_runner.py      — RLRunner (all_gait trot; Gate C/F, vy ölü)  │
 │    pre-trained Go2 gait policy  →  set_command(vx,vy,wz)        │
 ├─────────────────────────────────────────────────────────────┤
 │  codeep/robot/go2_client.py      — DDS köprüsü (LowCmd/LowState)    │
@@ -219,23 +221,27 @@ Katmanlı mimari (her katman `codeep/` altında ayrı modül):
   RL politikalarıyla üretilir; her ikisi de aynı `set_command(vx, vy, wz)`
   API'sini sunar (gerçek Go2 sport-mode paradigması: yürüyüş kara kutu,
   dışarısı hız komutu gönderir):
-  - `RLRunner` (varsayılan) — `all_gait_23Dec2025.pt` trot policy'si
-    (shivam-sood00/unitree-sim2real). `vy` komutu **ölüdür**; yanal crab
-    `yaw_bias` ön-beslemesiyle iptal edilir (§9.5).
-  - `RLRunnerOnnx` (`--onnx`) — `diasAiMaster/unitree-go2-velocity-flat`
-    ONNX policy'si (mjlab PPO, düz zemin). `vy`'yi **izler**; normalize
-    katmanı ONNX grafiğine katlanmış olduğundan ham 45-boyutlu obs beslenir.
-    `vy` desteği sayesinde `NavController` gerçek kapalı-çevrim yanal düzeltme
-    yapar → `yaw_bias`'a ihtiyaç duymadan düz yürüyüş (Gate D `--onnx`:
-    5 m'de ~0.03 m sapma; all_gait+yaw_bias ~0.18 m). PDF'in "RL beklenmiyor"
-    notu "zorunlu değil" anlamındadır; navigasyon/engel/waypoint/dokümantasyon
-    bize aittir (§9).
+  - `RLRunnerOnnx` (`--onnx`, **çekirdek düz yürüyüş policy'si**) —
+    `diasAiMaster/unitree-go2-velocity-flat` ONNX policy'si (mjlab PPO, düz
+    zemin). `vy`'yi **izler**; normalize katmanı ONNX grafiğine katlanmış
+  olduğundan ham 45-boyutlu obs beslenir. `vy` desteği sayesinde
+    `NavController` gerçek kapalı-çevrim yanal düzeltme yapar → `yaw_bias`'a
+    ihtiyaç duymadan düz yürüyüş (Gate D `--onnx`: 5 m'de ~0.03 m sapma).
+    **Bu, Go2'müzün çekirdek yürüyüş yeteneğidir** (düz-çizgi, kapalı-çevrim
+    yanal düzeltme, yaw_bias yok). PDF'in "RL beklenmiyor" notu "zorunlu değil"
+    anlamındadır; navigasyon/engel/waypoint/dokümantasyon bize aittir (§9).
+  - `RLRunner` (yedek/eski, Gate C + F) — `all_gait_23Dec2025.pt` trot
+    policy'si (shivam-sood00/unitree-sim2real). `vy` komutu **ölüdür**; yanal
+    crab `yaw_bias` ön-beslemesiyle iptal edilir (5 m'de ~0.18 m sapma, §9.5).
+    Gate C (ileri yürü) ve Gate F+ (waypoint, all_gait) bunu kullanır;
+    düz-çizgi yürüyüş için `RLRunnerOnnx` tercih edilir.
 - **Navigation (Gate D, bizim kodumuz):** `NavController`, P-kontrol
   tabanlı dümenleme yapar: hedefe bearing ile yaw hatası → `wz`; mesafe →
   `vx` (hizalanma olmadığında `min_align` kadar minimum ileri hız, böylece
-  policy yürümeyi bırakmaz); yanal crab `use_vy=False` (all_gait) iken
-  `yaw_bias` ön-beslemesiyle, `use_vy=True` (ONNX) iken gerçek `vy` ile iptal
-  edilir (§9.5). Poz `SportModeState`'ten okunur.
+  policy yürümeyi bırakmaz). Yanal crab iptali: çekirdek yürüyüş policy'si
+  (ONNX, `use_vy=True`) gerçek `vy` ile kapalı-çevrim düzeltir (`yaw_bias` yok);
+  yedek `all_gait` (`use_vy=False`, `vy` ölü) `yaw_bias` ön-beslemesiyle iptal
+  eder (§9.5). Poz `SportModeState`'ten okunur.
 - **ObstacleAvoider (Gate E, bizim):** iki mod — (i) **harita-tabanlı**
   (`avoider.py`, varsayılan): engellerin konumu sahne/config'den bilinir,
   gövde çerçevesine projekte edilip ön+reaksiyon mesafesi içinde ise tespit
@@ -266,13 +272,15 @@ Tüm modüller `codeep/` paketinde; doğrulama betikleri `gates/` altında.
    kp_lat_yaw*lat_body, ±max_wz)`.
 5. `align = max(min_align, 1 - |yaw_err|/slow_yaw_err)`; `vx = clip(kp_lin*dist,
    max_vx) * align` — büyük yaw hatasında bile minimum ileri hız korunur.
-6. `vy = 0` (all_gait, `use_vy=False`) **veya** `vy = clip(kp_lat*lat_body, ±max_vy)`
-   (ONNX vy policy, `use_vy=True`) — yanal sapmayı kapalı-çevrim düzeltir.
+6. `vy = clip(kp_lat*lat_body, ±max_vy)` (çekirdek ONNX vy policy,
+   `use_vy=True`) — yanal sapmayı kapalı-çevrim düzeltir; **veya** `vy = 0`
+   (yedek all_gait, `use_vy=False`, `vy` ölü).
 7. `dist <= goal_tol` → hedefe ulaşıldı.
 
-Bu denetleyici, Gate D'de (5,0) hedefine ulaştı (all_gait+yaw_bias: varış
-0.24 m; ONNX `--onnx`: varış 0.24 m, **max yanal sapma 0.03 m**, yaw_bias yok)
-ve Gate F+'da 4 waypoint'i sırayla gezdi (maks varış hatası 0.30 m).
+Bu denetleyici, Gate D'de (5,0) hedefine ulaştı: çekirdek ONNX `--onnx` —
+varış 0.24 m, **max yanal sapma 0.03 m**, `yaw_bias` yok; yedek all_gait+yaw_bias
+— varış 0.24 m, ~0.18 m yanal sapma. Gate F+'da 4 waypoint'i sırayla gezdi
+(maks varış hatası 0.30 m).
 
 ## 7. Engel algılama yaklaşımı (varsa)
 
@@ -280,7 +288,7 @@ ve Gate F+'da 4 waypoint'i sırayla gezdi (maks varış hatası 0.30 m).
 engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadece
 **tespit kaynağı** değişir.
 
-### 7.1 Sensör-tabanlı (varsayılan bonus yol, `--rf`)
+### 7.1 Sensör-tabanlı (bonus yol, `--rf`)
 
 `RangefinderAvoider` (Gate E `--onnx --rf`):
 
@@ -434,8 +442,8 @@ engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadec
 | A | Kurulum + import | PASS |
 | B | Go2 dik dur (30 sn, düşmez) | PASS (7 mm sürüklenme) |
 | C | İleri yürü | PASS (+1.13 m ileri, dik) |
-| D | Hedefe ulaş (5,0) — all_gait + yaw_bias | PASS (varış 0.24 m, ~0.18 m yanal) |
-| D `--onnx` | Hedefe ulaş (5,0) — ONNX vy policy (yaw_bias yok) | PASS (varış 0.24 m, **max yanal 0.03 m**) |
+| D `--onnx` | **Çekirdek** düz yürüyüş (5,0) — ONNX vy policy (yaw_bias yok) | PASS (varış 0.24 m, **max yanal 0.03 m**) |
+| D | Hedefe ulaş (5,0) — all_gait + yaw_bias (yedek) | PASS (varış 0.24 m, ~0.18 m yanal) |
 | E | Engelden kaçın + hedefe ulaş (harita-tabanlı) | PASS (0.39 m clearance) |
 | E `--onnx --rf` | Engelden kaçın — **sensör** (rangefinder) tespiti | PASS (0.42 m clearance, 0.24 m varış, düşmedi) |
 | F+ | 4 waypoint + engel (tek run) | PASS (4/4, 0.30 m, engel kaçınıldı) |
@@ -452,8 +460,8 @@ CodeepCase/
 ├── codeep/                    # kütüphane
 │   ├── robot/go2_client.py       # DDS köprüsü (LowCmd/LowState/SportModeState)
 │   ├── robot/rangefinder_idl.py  # RangefinderData DDS IDL (rt/rangefinders)
-│   ├── locomotion/rl_runner.py      # RLRunner — all_gait trot policy sarmalayıcı
-│   ├── locomotion/rl_runner_onnx.py # RLRunnerOnnx — ONNX vy policy (--onnx)
+│   ├── locomotion/rl_runner_onnx.py # RLRunnerOnnx — ONNX vy policy (ÇEKİRDEK düz yürüyüş, --onnx)
+│   ├── locomotion/rl_runner.py      # RLRunner — all_gait trot policy (yedek; Gate C/F, vy ölü)
 │   └── control/
 │       ├── kinematics.py          # (open-loop deneme; nihayet kullanılmadı)
 │       ├── trot.py                # (open-loop deneme; nihayet kullanılmadı)
@@ -486,4 +494,6 @@ CodeepCase/
 
 `codeep/control/kinematics.py` ve `trot.py` (ve `gates/gate_c_walk.py`)
 open-loop IK denemesinden kalmadır (§9.2); mimarinin anlaşılması için
-tutulmuştur, nihai yürüme `rl_runner.py` ile sağlanır (Gate C: `gates/gate_c_rl.py`).
+tutulmuştur. Çekirdek düz yürüyüş `rl_runner_onnx.py` (ONNX vy policy) ile
+sağlanır; `rl_runner.py` (all_gait) Gate C (ileri yürü) ve Gate F+ (waypoint)
+için yedek olarak kalır.
