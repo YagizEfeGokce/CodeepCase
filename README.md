@@ -438,9 +438,46 @@ engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadec
   portlanıp `RangefinderAvoider`'a bağlanabilir.
 - **Daha geniş rangefinder tarama:** 3 ışın yerine dönen lidar / derinlik
   sensörü ekleyip tespit açısını büyütmek.
-- **ROS2 topic/service katmanı:** (bonus maddesi; bu çalışmada pure-Python
-  SDK ile yapıldı, ROS2 isteğe bağlı).
+- ~~**ROS2 topic/service katmanı:**~~ **TAMAMLANDI (bonus)** — §11. `codeep/ros2_bridge.py`
+  DDS<->ROS2 köprü düğümü: Go2 DDS arayüzünü standard ROS2 topic/service'lara
+  açar (`/go2/cmd_vel`, `/go2/pose`, `/go2/imu`, `/go2/joint_states`,
+  `/go2/range_*`, `/go2/stop`). `RLRunnerOnnx(ros2_cmd=True)` `/go2/cmd_vel` ile
+  sürülür. `bash scripts/ros2_demo.sh` ile uçtan uca doğrulandı.
 - **Demo videosu:** kullanıcı tarafından hazırlanacak.
+
+## 11. ROS2 topic/service köprüsü (bonus)
+
+Mevcut DDS arayüzünü (`unitree_sdk2py` + CycloneDDS) standard ROS2 topic/service'lara
+açan bir köprü düğümü — case'in "ROS2 topic/service yapısının etkin kullanılması"
+bonus maddesi. ROS2 Jazzy + `rclpy` üzerinde, `codeep/ros2_bridge.py`:
+
+- **DDS → ROS2 (durum telemetrisi):**
+  - `rt/lowstate` → `/go2/joint_states` (`sensor_msgs/JointState`, 12 eklem) + `/go2/imu` (`sensor_msgs/Imu`)
+  - `rt/sportmodestate` → `/go2/pose` (`geometry_msgs/PoseStamped`)
+  - `rt/rangefinders` → `/go2/range_{forward,left,right}` (`sensor_msgs/Range`)
+- **ROS2 → DDS (komut):**
+  - `/go2/cmd_vel` (`geometry_msgs/Twist`: `linear.x`=vx, `linear.y`=vy, `angular.z`=wz) → DDS `rt/cmd_vel` (`CmdVel` IDL)
+  - `/go2/stop` servisi (`std_srvs/Trigger`) → `rt/cmd_vel` (0,0,0)
+
+`RLRunnerOnnx(ros2_cmd=True)` DDS `rt/cmd_vel`'i abone olup policy'yi ROS2
+`cmd_vel` ile sürer; böylece Go2 standart ROS2 `cmd_vel` topic'inden
+komutlanır. Köprü system `python3` + ROS2 ile, runner venv `python` ile çalışır
+(`scripts/ros2_env.sh` ortamı ayarlar).
+
+```bash
+bash scripts/ros2_demo.sh          # sim + runner + köprü + demo istemci (uçtan uca)
+# veya tek tek:
+source scripts/ros2_env.sh
+.venv/bin/python scripts/ros2_run.py            # ONNX runner, ros2_cmd modu
+python3 codeep/ros2_bridge.py                   # DDS<->ROS2 köprü düğümü
+ros2 topic pub /go2/cmd_vel geometry_msgs/Twist "{linear: {x: 0.3}}"   # sür
+ros2 service call /go2/stop std_srvs/Trigger                            # dur
+ros2 topic echo /go2/pose                                                # telemetri
+```
+
+**Doğrulama:** demo istemci `/go2/cmd_vel` ile 6 sn ileri sürdü (x 0.01→1.78 m,
+~0.3 m/s), `/go2/stop` servisi robotu durdurdu (pose sabit 1.78 m), `/go2/pose`
+telemetrisi okundu — ROS2 topic + service yolu uçtan uca çalıştı.
 
 ---
 
@@ -470,6 +507,8 @@ CodeepCase/
 ├── codeep/                    # kütüphane
 │   ├── robot/go2_client.py       # DDS köprüsü (LowCmd/LowState/SportModeState)
 │   ├── robot/rangefinder_idl.py  # RangefinderData DDS IDL (rt/rangefinders)
+│   ├── robot/cmd_vel_idl.py      # CmdVel DDS IDL (rt/cmd_vel, ROS2 bridge)
+│   ├── ros2_bridge.py            # DDS<->ROS2 bridge node (§11, bonus)
 │   ├── locomotion/rl_runner_onnx.py # RLRunnerOnnx — ONNX vy policy (ÇEKİRDEK düz yürüyüş, --onnx)
 │   ├── locomotion/rl_runner.py      # RLRunner — all_gait trot policy (yedek; Gate C/F, vy ölü)
 │   └── control/
@@ -491,6 +530,10 @@ CodeepCase/
 │   ├── check_env.sh            # ortam doğrula (rf sahneleri + ONNX model dahil)
 │   ├── sim_headless.py         # MuJoCo + DDS bridge + rangefinder yayını (--viewer isteğe bağlı)
 │   ├── use_scene.sh            # clean ↔ obstacle ↔ rf ↔ course sahne değiştir
+│   ├── ros2_env.sh             # ROS2 Jazzy + DDS ortamı (bridge/runner için, §11)
+│   ├── ros2_run.py             # ONNX runner ros2_cmd modu (ROS2 cmd_vel ile sürülür)
+│   ├── ros2_demo_client.py     # ROS2 demo istemci (cmd_vel + /go2/stop + pose)
+│   ├── ros2_demo.sh            # uçtan uca ROS2 demo (sim+runner+köprü+istemci)
 │   └── stand_watch.py / walk_watch.py
 ├── scenes/                    # Go2 MJCF sahneleri (repo'da; setup.sh external'a kopyalar)
 │   ├── go2_scene_clean.xml

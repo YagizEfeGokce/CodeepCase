@@ -77,12 +77,14 @@ def _quat_to_rot(w: float, x: float, y: float, z: float) -> np.ndarray:
 
 class RLRunnerOnnx:
     def __init__(self, policy_path: str | None = None, domain_id: int = 1,
-                 interface: str = "lo", stand_time: float = 3.0, sim_dt: float = SIM_DT):
+                 interface: str = "lo", stand_time: float = 3.0, sim_dt: float = SIM_DT,
+                 ros2_cmd: bool = False):
         self.policy_path = policy_path or DEFAULT_MODEL
         self.domain_id = domain_id
         self.interface = interface
         self.stand_time = stand_time
         self.sim_dt = sim_dt
+        self.ros2_cmd = ros2_cmd  # if True, read (vx,vy,wz) from DDS rt/cmd_vel (ROS2 bridge)
         self._stop = threading.Event()
         self._thread = None
         self._lock = threading.Lock()
@@ -124,6 +126,11 @@ class RLRunnerOnnx:
                 self._quat = None
             self._lowstate = msg
 
+    def _on_cmd_vel(self, msg):
+        # ROS2 bridge: rt/cmd_vel (CmdVel) -> self._command (vx, vy, wz)
+        with self._lock:
+            self._command[:] = [float(msg.vx), float(msg.vy), float(msg.wz)]
+
     # ---- lifecycle ----
     def start(self):
         self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -163,6 +170,12 @@ class RLRunnerOnnx:
         high_sub.Init(self._on_highstate, 10)
         low_sub = ChannelSubscriber("rt/lowstate", LowState_)
         low_sub.Init(self._on_lowstate, 10)
+        if self.ros2_cmd:
+            # ROS2 bridge mode: drive the policy from DDS rt/cmd_vel (CmdVel)
+            # published by codeep/ros2_bridge.py from ROS2 /go2/cmd_vel.
+            from codeep.robot.cmd_vel_idl import CmdVel  # lazy (keeps non-ROS2 path decoupled)
+            cmd_sub = ChannelSubscriber("rt/cmd_vel", CmdVel)
+            cmd_sub.Init(self._on_cmd_vel, 10)
         pub = ChannelPublisher("rt/lowcmd", LowCmd_)
         pub.Init()
         crc = CRC()
