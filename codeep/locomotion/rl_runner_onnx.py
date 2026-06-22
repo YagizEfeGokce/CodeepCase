@@ -193,14 +193,23 @@ class RLRunnerOnnx:
             cmd.crc = crc.Crc(cmd)
             pub.Write(cmd)
 
-        # --- stand-up: hold default pose ---
-        stand_steps = int(self.stand_time / self.sim_dt)
-        stand_kp = np.full(12, 30.0, dtype=np.float32)
-        stand_kd = np.full(12, 1.0, dtype=np.float32)
-        for _ in range(stand_steps):
+        # --- stand-up: smooth ramp current pose -> default, model deploy gains ---
+        # (the model's way: ramp start_q -> default_joint_pos over stand_time with the
+        # deploy.yaml per-joint stiffness/damping (KPS/KDS), slew-limited for a safe,
+        # jerk-free wake-up — instead of abruptly holding the default pose).
+        ls0 = self._lowstate
+        start_q = np.array([ls0.motor_state[i].q for i in range(12)], dtype=np.float32)
+        stand_steps = max(1, int(self.stand_time / self.sim_dt))
+        STAND_MAX_STEP = 0.05  # rad per sim step — slew cap for smoothness
+        prev_q = start_q.copy()
+        for k in range(stand_steps):
             if self._stop.is_set():
                 return
-            write_cmd(DEFAULT_POS_MOTOR, stand_kp, stand_kd)
+            alpha = (k + 1) / stand_steps
+            desired = (1.0 - alpha) * start_q + alpha * DEFAULT_POS_MOTOR
+            target = prev_q + np.clip(desired - prev_q, -STAND_MAX_STEP, STAND_MAX_STEP)
+            write_cmd(target, KPS, KDS)
+            prev_q = target
             time.sleep(self.sim_dt)
 
         # --- policy loop ---
