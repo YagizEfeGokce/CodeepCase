@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# unitree_mujoco simülatörünün sahne dosyasını değiştir (clean / obstacle / rf).
-# Kullanım: bash scripts/use_scene.sh clean | obstacle | rf
+# unitree_mujoco simülatörünün sahne dosyasını değiştir (clean / obstacle / rf / course).
+# Kullanım: bash scripts/use_scene.sh clean | obstacle | rf | course
 set -e
 cd "$(dirname "$0")/.."
 CFG="external/unitree_mujoco/simulate_python/config.py"
@@ -8,8 +8,9 @@ case "${1:-clean}" in
 clean) SCENE="scene_clean.xml" ;;
 obstacle) SCENE="scene_obstacle.xml" ;;
 rf) SCENE="scene_obstacle_rf.xml" ;;
+course) SCENE="scene_course.xml" ;;
 *)
-	echo "kullanım: $0 clean|obstacle|rf"
+	echo "kullanım: $0 clean|obstacle|rf|course"
 	exit 1
 	;;
 esac

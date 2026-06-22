@@ -27,7 +27,7 @@ need_venv() {
 		exit 1
 	}
 }
-start_sim() { # $1 = clean|obstacle|rf
+start_sim() { # $1 = clean|obstacle|rf|course
 	[ -d "$SIMDIR" ] || {
 		echo "[run] external/unitree_mujoco yok — 'bash scripts/setup.sh'."
 		exit 1
@@ -35,9 +35,9 @@ start_sim() { # $1 = clean|obstacle|rf
 	[ -f "$PIDF" ] && kill "$(cat "$PIDF")" 2>/dev/null
 	sleep 1
 	bash scripts/use_scene.sh "$1"
-	# rf sahnesi rangefinder yayımlamalı → sim_headless.py (viewer+rf veya headless+rf).
+	# rf/course sahnesi rangefinder yayımlamalı → sim_headless.py (viewer+rf veya headless+rf).
 	# clean/obstacle sahnesi upstream unitree_mujoco.py viewer'ını kullanır (rf yok).
-	if [ "$1" = "rf" ]; then
+	if [ "$1" = "rf" ] || [ "$1" = "course" ]; then
 		if [ "${HEADLESS:-0}" = "1" ] || [ -z "${DISPLAY:-}" ]; then
 			(SDL_VIDEODRIVER=dummy "$PY" scripts/sim_headless.py --duration 180) >"$LOG" 2>&1 &
 			echo "[run] headless sim başlatılıyor (sahne=$1, pid=$!)... 6 sn bekleniyor"
@@ -90,6 +90,10 @@ e)
 f)
 	start_sim obstacle
 	"$PY" gates/gate_f_combined.py "$@"
+	;;
+course)
+	start_sim course
+	"$PY" gates/gate_course.py "$@"
 	;;
 f-waypoints)
 	start_sim clean

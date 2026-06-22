@@ -45,6 +45,7 @@ cp scenes/go2_scene_clean.xml "$GO2DIR/scene_clean.xml"
 cp scenes/go2_scene_obstacle.xml "$GO2DIR/scene_obstacle.xml"
 cp scenes/go2_rangefinder.xml "$GO2DIR/go2_rangefinder.xml"         # rangefinder sensörlü robot (Gate E --rf)
 cp scenes/go2_scene_obstacle_rf.xml "$GO2DIR/scene_obstacle_rf.xml" # engel + rangefinder sahnesi (Gate E --rf)
+cp scenes/go2_scene_course.xml "$GO2DIR/scene_course.xml"          # 5-waypoint + 3-obstacle course (Gate Course --rf)
 bash scripts/use_scene.sh clean
 
 echo "=== 6) diasAiMaster Go2 velocity ONNX policy'sini indir (RLRunnerOnnx için) ==="

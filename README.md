@@ -24,6 +24,7 @@ bash run.sh d                   # Gate D: (yedek) all_gait+yaw_bias ~0.18 m sapm
 bash run.sh e --onnx --rf        # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy (bonus)
 bash run.sh e                   # Gate E: engelden kaçın (harita-tabanlı, all_gait)
 bash run.sh f                   # Gate F+: 4 waypoint + engel (tek run)
+bash run.sh course --onnx --rf  # Gate Course: 5 waypoint + 3 engel (sensör detour, bonus)
 bash run.sh g1                  # Gate G: G1 humanoid yürü (bonus)
 ```
 
@@ -169,6 +170,7 @@ DISPLAY=:1 ../../../../.venv/bin/python unitree_mujoco.py
 bash scripts/use_scene.sh clean      # scene_clean.xml — Gate B/C/D (engelsiz)
 bash scripts/use_scene.sh obstacle   # scene_obstacle.xml — Gate E/F+ (kutu engel)
 bash scripts/use_scene.sh rf         # scene_obstacle_rf.xml — Gate E --rf (engel + rangefinder sensörleri)
+bash scripts/use_scene.sh course     # scene_course.xml — Gate Course --rf (5 waypoint + 3 engel)
 ```
 
 - `scene_clean.xml` — engelsiz sahne (Gate B/C/D ve çoklu waypoint testleri)
@@ -176,6 +178,8 @@ bash scripts/use_scene.sh rf         # scene_obstacle_rf.xml — Gate E --rf (en
 - `scene_obstacle_rf.xml` — kutu engel + Go2'ye 3 MuJoCo `<rangefinder>` sensörü
   (ön/sol/sağ); `sim_headless.py` bu ölçümleri DDS `rt/rangefinders` konusunda
   yayımlar (Gate E `--rf` sensör-tabanlı tespit)
+- `scene_course.xml` — 5-waypoint kurs + 3 kutu engel (her biri bir bacak üzerinde,
+  0.6 m boy); Gate Course `--rf` sensör-tabanlı çoklu-engel detour
 
 ```bash
 # --- B) Doğrulama betikleri (gates/, ayrı terminal, aynı venv) ---
@@ -186,6 +190,7 @@ bash scripts/use_scene.sh rf         # scene_obstacle_rf.xml — Gate E --rf (en
 .venv/bin/python gates/gate_e_obstacle.py --onnx --rf   # Gate E: sensör-tabanlı (rangefinder) + ONNX vy policy (bonus)
 .venv/bin/python gates/gate_e_obstacle.py    # Gate E: engelden kaçın (harita-tabanlı)
 .venv/bin/python gates/gate_f_combined.py   # Gate F+: 4 waypoint + engel (tek run)
+.venv/bin/python gates/gate_course.py --onnx --rf  # Gate Course: 5 waypoint + 3 engel (sensör detour, bonus)
 .venv/bin/python gates/gate_g_g1.py          # Gate G: G1 humanoid (kendi viewer'ı)
 
 # İzleme/demo yardımcıları (scripts/):
@@ -413,8 +418,10 @@ engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadec
   MuJoCo `<rangefinder>` sensörü eklendi (`go2_rangefinder.xml`);
   `sim_headless.py` ölçümleri DDS `rt/rangefinders`'ta yayımlar;
   `RangefinderAvoider` (`--rf`) sensörden tespit edip detour yapar (Gate E
-  `--onnx --rf` PASS). Kalan: daha geniş açılı tarama / 360° lidar ve
-  çoklu-engel A* global planlayıcı (aşağıda).
+  `--onnx --rf` PASS). **Çoklu-engel çoklu-waypoint kursu** da TAMAMLANDI:
+  Gate Course `--onnx --rf` — 5 waypoint + 3 engel, her bacakta sensör tespit
+  - reaktif detour (PASS: 5/5 wp, 4 detour, min_obs 0.33 m). Kalan: daha
+  geniş açılı tarama / 360° lidar ve çoklu-engel A* global planlayıcı (aşağıda).
 - ~~**`vy` destekleyen policy:**~~ **TAMAMLANDI** — `RLRunnerOnnx`
   (`diasAiMaster` ONNX velocity policy) `vy`'yi izler; `NavController`
   `use_vy=True` ile kapalı-çevrim yanal düzeltme yapar → `yaw_bias`
@@ -424,9 +431,11 @@ engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadec
 - **G1'i DDS köprüsüne entegre etmek:** G1'i kendi standalone pipeline'ından
   `unitree_mujoco` DDS köprüsüne taşımak (aynı navigasyon stack'ini
   paylaşır).
-- **A\* global planlayıcı:** sensör-tabanlı mod şu an tek engel için reaktif
-  detour yapıyor; çoklu/karmaşık engel alanları için A* (önceki Gazebo
-  denemesinde mevcuttu) portlanıp `RangefinderAvoider`'a bağlanabilir.
+- **A\* global planlayıcı:** sensör-tabanlı mod şu an tek engel ve
+  Gate Course'taki 3 engel için **reaktif** detour yapıyor (her bacakta
+  `RangefinderAvoider` tespit → yan detour → hedefe dön); sık/karmaşık
+  engel alanları (labirent) için A* (önceki Gazebo denemesinde mevcuttu)
+  portlanıp `RangefinderAvoider`'a bağlanabilir.
 - **Daha geniş rangefinder tarama:** 3 ışın yerine dönen lidar / derinlik
   sensörü ekleyip tespit açısını büyütmek.
 - **ROS2 topic/service katmanı:** (bonus maddesi; bu çalışmada pure-Python
@@ -447,6 +456,7 @@ engelin yanına detour waypoint'i → ardından hedefe dön) kullanır — sadec
 | E | Engelden kaçın + hedefe ulaş (harita-tabanlı) | PASS (0.39 m clearance) |
 | E `--onnx --rf` | Engelden kaçın — **sensör** (rangefinder) tespiti | PASS (0.42 m clearance, 0.24 m varış, düşmedi) |
 | F+ | 4 waypoint + engel (tek run) | PASS (4/4, 0.30 m, engel kaçınıldı) |
+| Course `--onnx --rf` | 5 waypoint + 3 engel — **sensör** çoklu-engel detour (bonus) | PASS (5/5 wp, 4 sensör detour, min_obs 0.33 m, düşmedi) |
 | G | G1 humanoid yürü (bonus) | PASS (+1.22 m, dik) |
 
 ## Ek: Repo yapısı
@@ -472,20 +482,22 @@ CodeepCase/
 ├── gates/                     # doğrulama betikleri (gate A–G)
 │   ├── gate_b_stand.py … gate_g_g1.py
 │   ├── straight_walk.py         # Gate D: hedefe git (--onnx bayrağı)
-│   └── gate_e_obstacle.py       # Gate E: engelden kaçın (--onnx --rf bayrakları)
+│   ├── gate_e_obstacle.py       # Gate E: engelden kaçın (--onnx --rf bayrakları)
+│   └── gate_course.py           # Gate Course: 5 waypoint + 3 engel (--onnx --rf, sensör detour)
 ├── experiments/               # vy-policy araştırması (walk.pt/amble — reddedildi) + ONNX probe
 │   └── straight_walk_onnx.py    # ONNX policy sim-to-sim transfer probe
 ├── scripts/                   # kurulum + sim + canlı izleme yardımcıları
 │   ├── setup.sh                # tek-komut kurulum (sudo'suz; rf sahneleri + HF ONNX model indirir)
 │   ├── check_env.sh            # ortam doğrula (rf sahneleri + ONNX model dahil)
 │   ├── sim_headless.py         # MuJoCo + DDS bridge + rangefinder yayını (--viewer isteğe bağlı)
-│   ├── use_scene.sh            # clean ↔ obstacle ↔ rf sahne değiştir
+│   ├── use_scene.sh            # clean ↔ obstacle ↔ rf ↔ course sahne değiştir
 │   └── stand_watch.py / walk_watch.py
 ├── scenes/                    # Go2 MJCF sahneleri (repo'da; setup.sh external'a kopyalar)
 │   ├── go2_scene_clean.xml
 │   ├── go2_scene_obstacle.xml
-│   ├── go2_rangefinder.xml       # Go2 + 3 rangefinder sensörü (Gate E --rf)
-│   └── go2_scene_obstacle_rf.xml # engel + rangefinder sahnesi (Gate E --rf)
+│   ├── go2_rangefinder.xml       # Go2 + 3 rangefinder sensörü (Gate E/Course --rf)
+│   ├── go2_scene_obstacle_rf.xml # engel + rangefinder sahnesi (Gate E --rf)
+│   └── go2_scene_course.xml      # 5-waypoint + 3-obstacle course (Gate Course --rf)
 └── external/                  # klonlanan bağımlılıklar (.gitignore)
     ├── cyclonedds/  unitree_mujoco/  unitree_sdk2_python/
     ├── unitree-sim2real/  unitree_rl_gym/
