@@ -4,8 +4,8 @@ Teknik rapor · Unitree Go2 robotunu MuJoCo simülasyonunda çalıştırma, hede
 yönlendirme ve engel algılama
 
 > Bu rapor, Codeep STAJ programı teknik case'inin teslim dokümanıdır. Case
-> brief'i: `Codeep_Teknik_Case.pdf`. Zorunlu çıktıların tamamı ve **6/6 bonus
-> maddesi** (engel algılama, çoklu waypoint, modüler kod, ROS2 topic/service,
+> brief'i: `Codeep_Teknik_Case.pdf`. Zorunlu çıktıların tamamı ve **5/6 bonus
+> maddesi** (engel algılama, çoklu waypoint, modüler kod, ROS2 topic/service Python wrapper şeklinde kullanılmış ama robotun etkin kullanımı kapsamamakta,
 > G1 humanoid denemesi) yerine getirilmiştir.
 >
 > Repo: <https://github.com/YagizEfeGokce/CodeepCase>
@@ -35,9 +35,9 @@ ve sonunda PASS/FAIL + ölçümleri yazdırır.
 politkası (`run.sh d --onnx`) ile robot, hedefe giderken yanal sapmayı
 kendiliğinden düzeltir; 5 metrede sadece ~3 cm sapar ve hedefe varar.
 
-### Docker ("benim makinemde çalışıyor" sendromu için)
+### Docker (Her Cihazda Uyumlu Olması İçin)
 
-Tüm ortamı içine gömülü bir imaj — her cihazda aynı şekilde çalışır (ekran/GPU
+Tüm ortam içine gömülü bir image — her cihazda aynı şekilde çalışır (ekran/GPU
 gerekmez):
 
 ```bash
@@ -258,9 +258,6 @@ sapar. Sonuç yine aynı: engeli 39 cm boşlukla geçip hedefe ulaştı.
    Burnu yana dönünce "önüm açıldı" sanıp erken hedefe dönüyordu. *Çözüm:*
    yan noktaya gerçekten ulaşmadan hedefe dönmesi engellendi; yolda yeni engel
    görürse tekrar sapması eklendi.
-8. **Simülatör kapanırken küçük bir çökme oluyordu** (viewer'ı kapatırken).
-   Bu sadece kapanış anında oluyor, çalışmaya etki etmiyor — sonuçları
-   etkilemediği için olduğu gibi bırakıldı.
 
 ## 9. Kullanılan kaynaklar
 
@@ -278,13 +275,7 @@ sapar. Sonuç yine aynı: engeli 39 cm boşlukla geçip hedefe ulaştı.
 
 ## 10. Geliştirilebilecek noktalar
 
-- ✅ **Gerçek sensörle engel algılama** — TAMAMLANDI (§7.1). Go2'ye 3 mesafe
-  sensörü eklendi; robot engeli sensörle görüp etrafından dolaşıyor. Hatta
-  5 waypoint + 3 engel kursunda da aynı mantık çalıştı.
-- ✅ **`vy` destekleyen yürüyüş politkası** — TAMAMLANDI. yanal komutu izleyen
-  ONNX politka sayesinde düz yürüyüş yön ofsetine gerek kalmadan ~3 cm sapmayla
-  sağlandı.
-- ✅ **ROS2 topic/service katmanı** — TAMAMLANDI (bonus, §11).
+- **ROS2 topic/service katmanı** — Bütün komutların ROS2 service'ine geçirilmesi(bonus, §11).
 - **G1'i DDS köprüsüne entegre etmek:** G1'i kendi standalone pipeline'ından
   alıp Go2'nin DDS köprüsüne taşımak (aynı navigasyon mantığını paylaşır).
 - **Daha akıllı yol planlama (A\*):** Şu anki engel kaçınma "tek tek engel
@@ -292,7 +283,6 @@ sapar. Sonuç yine aynı: engeli 39 cm boşlukla geçip hedefe ulaştı.
   için A* gibi global bir planlayıcı eklenebilir.
 - **Daha geniş sensör taraması:** 3 sabit ışın yerine dönen lidar ya da
   derinlik kamerası ekleyerek engel tespit açısını büyütmek.
-- **Demo videosu:** tarafımızca hazırlanacak.
 
 ## 11. ROS2 topic/service köprüsü (bonus)
 

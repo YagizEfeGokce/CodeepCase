@@ -25,18 +25,31 @@ trap cleanup EXIT
 echo "=== 1) sim (clean scene, headless) ==="
 bash scripts/use_scene.sh clean >/dev/null
 (SDL_VIDEODRIVER=dummy "$PYVENV" scripts/sim_headless.py --duration 60) >/tmp/ros2_sim.log 2>&1 &
-PIDS+=("$!"); sleep 5
-ps -eo pid,args | grep -q "sim_headless\.py" && echo "[demo] sim up" || { echo "[demo] sim failed"; tail -15 /tmp/ros2_sim.log; exit 1; }
+PIDS+=("$!")
+sleep 5
+ps -eo pid,args | grep -q "sim_headless\.py" && echo "[demo] sim up" || {
+	echo "[demo] sim failed"
+	tail -15 /tmp/ros2_sim.log
+	exit 1
+}
 
 echo "=== 2) ONNX runner (ros2_cmd mode) ==="
 ("$PYVENV" scripts/ros2_run.py) >/tmp/ros2_runner.log 2>&1 &
-PIDS+=("$!"); sleep 5
-grep -q "stood up" /tmp/ros2_runner.log && echo "[demo] runner up + stood up" || { echo "[demo] runner log:"; tail -15 /tmp/ros2_runner.log; }
+PIDS+=("$!")
+sleep 5
+grep -q "stood up" /tmp/ros2_runner.log && echo "[demo] runner up + stood up" || {
+	echo "[demo] runner log:"
+	tail -15 /tmp/ros2_runner.log
+}
 
 echo "=== 3) ROS2 bridge (DDS <-> ROS2) ==="
 (python3 codeep/ros2_bridge.py) >/tmp/ros2_bridge.log 2>&1 &
-PIDS+=("$!"); sleep 4
-grep -q "go2_ros2_bridge up" /tmp/ros2_bridge.log && echo "[demo] bridge up" || { echo "[demo] bridge log:"; tail -15 /tmp/ros2_bridge.log; }
+PIDS+=("$!")
+sleep 4
+grep -q "go2_ros2_bridge up" /tmp/ros2_bridge.log && echo "[demo] bridge up" || {
+	echo "[demo] bridge log:"
+	tail -15 /tmp/ros2_bridge.log
+}
 
 echo "=== 4) ROS2 topics/services now available ==="
 ros2 topic list 2>/dev/null | grep '^/go2/' | sed 's/^/  topic: /'

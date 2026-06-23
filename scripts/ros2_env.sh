@@ -16,10 +16,11 @@ ROOT="$PWD"
 # ROS2 Jazzy (rclpy + geometry_msgs/sensor_msgs/std_srvs)
 if [ -f /opt/ros/jazzy/setup.bash ]; then
 	# ROS2 setup.bash references unset vars; temporarily disable nounset.
-	_ros2_old_opts="${-:-}"; set +u
+	_ros2_old_opts="${-:-}"
+	set +u
 	# shellcheck disable=SC1091
 	source /opt/ros/jazzy/setup.bash
-	case "$_ros2_old_opts" in *u*) set -u;; esac
+	case "$_ros2_old_opts" in *u*) set -u ;; esac
 else
 	echo "[ros2_env] /opt/ros/jazzy/setup.bash yok — ROS2 Jazzy kurulu değil." >&2
 	exit 1
